@@ -5,7 +5,7 @@ from ingestion import retriever
 
 
 def retrieve(state: GraphState) -> Dict[str, Any]:
-    print("###Retrieving###")
+    print("### Retrieving ###")
     question = state.get("question", '')
     documents = retriever.invoke(question)
 
