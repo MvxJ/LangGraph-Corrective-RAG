@@ -6,6 +6,7 @@ from graph.chains.answe_grader import GradeAnswer, grade_answer
 from graph.chains.generation import generation_chain
 from graph.chains.hallucination_grader import hallucination_grader
 from graph.chains.retrieval_grader import GradeDocuments, retrieval_grader
+from graph.chains.router import question_router, RouteQuery
 from ingestion import retriever
 
 load_dotenv(verbose=True)
@@ -119,3 +120,19 @@ def test_answer_grader_response_not_address_question() -> None:
     )
 
     assert not question_address_answer_grade.binary_score
+
+def test_router_route_to_vector_store() -> None:
+    question = 'What is agent short-term memory?'
+    router_query: RouteQuery = question_router.invoke({
+        'question': question,
+    })
+
+    assert router_query.datasource == 'vectorstore'
+
+def test_router_route_to_web_search() -> None:
+    question = 'How to make a pizza?'
+    router_query: RouteQuery = question_router.invoke({
+        'question': question,
+    })
+
+    assert router_query.datasource == 'websearch'

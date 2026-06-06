@@ -4,12 +4,28 @@ from langgraph.graph import END, StateGraph
 
 from graph.chains.answe_grader import grade_answer
 from graph.chains.hallucination_grader import hallucination_grader
+from graph.chains.router import RouteQuery, question_router
 from graph.consts import RETRIEVE, GRADE_DOCUMENTS, GENERATE, WEB_SEARCH
 from graph.nodes import retrieve, grade_documents, web_search, generate
 from graph.state import GraphState
 
 load_dotenv(verbose=True)
 load_dotenv(".env.local", override=True)
+
+
+def route_question(state: GraphState) -> str:
+    print('### ROUTE QUESTION ###')
+    question = state.get('question', '')
+    source: RouteQuery = question_router.invoke({
+        'question': question,
+    })
+
+    if source.datasource == 'websearch':
+        print('### ROUTE QUESTION TO WEB SEARCH ###')
+        return WEB_SEARCH
+    elif source.datasource == 'vectorstore':
+        print('### ROUTE QUESTION TO VECTORSTORE ###')
+        return RETRIEVE
 
 
 def grade_generation_grounded_in_documents_and_question(state: GraphState) -> str:
@@ -60,7 +76,14 @@ graph.add_node(GRADE_DOCUMENTS, grade_documents)
 graph.add_node(GENERATE, generate)
 graph.add_node(WEB_SEARCH, web_search)
 
-graph.set_entry_point(RETRIEVE)
+# graph.set_entry_point(RETRIEVE)
+graph.set_conditional_entry_point(
+    route_question,
+    {
+        RETRIEVE: RETRIEVE,
+        WEB_SEARCH: WEB_SEARCH,
+    }
+)
 graph.add_edge(RETRIEVE, GRADE_DOCUMENTS)
 graph.add_conditional_edges(
     GRADE_DOCUMENTS,
